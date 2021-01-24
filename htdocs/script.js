@@ -35,12 +35,6 @@ function load_ics(ics_data) {
 
 function fetch_ics_feed(url) {
   $.get(url, (res) => load_ics(res));
-  if ($("#share input")[0].checked) {
-    URIHash.set('feed', url);
-  } else {
-    URIHash.set('feed', '');
-    window.location.hash = "";
-  }
 }
 
 $(document).ready(function () {
@@ -79,4 +73,28 @@ $(document).ready(function () {
     const url = $("#eventsource").val();
     fetch_ics_feed(url);
   });
+  let match,
+  pl = /\+/g,  // Regex for replacing addition symbol with a space
+  search = /([^&=]+)=?([^&]*)/g,
+  decode = function (s) {
+      return decodeURIComponent(s.replace(pl, " "));
+  },
+  query = window.location.search.substring(1),
+  urlParams = {};
+
+  while (match = search.exec(query)) {
+    if (decode(match[1]) in urlParams) {
+        if (!Array.isArray(urlParams[decode(match[1])])) {
+            urlParams[decode(match[1])] = [urlParams[decode(match[1])]];
+        }
+        urlParams[decode(match[1])].push(decode(match[2]));
+    } else {
+        urlParams[decode(match[1])] = decode(match[2]);
+    }
+  }
+  const ics_list = Array.isArray(urlParams.ics) ? urlParams.ics : [urlParams.ics];
+  console.log('ics_list: ', ics_list);
+  for (let url of ics_list || []) {
+    fetch_ics_feed(url);
+  }
 });
